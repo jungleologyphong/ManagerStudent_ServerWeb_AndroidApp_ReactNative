@@ -1,0 +1,192 @@
+var app = require('../app');
+var debug = require('debug')('assignmentmob402:server');
+var http = require('http');
+var socketio = require('socket.io');
+const db = require("../config/db");
+db.connect();
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+var server = http.createServer(app);
+const io = socketio(server);
+
+
+//ConnectionSocket
+io.on('connection', (socket) => {
+    const users = require("../model/User");
+    const students = require("../model/Student");
+    const books = require("../model/Book");
+    console.log('A User Connection');
+//JoinSever
+    socket.on('join', function(data) {
+        console.log("EventJoin: " + data);
+    });
+    
+//JoinSever
+//SignIn
+  socket.on("login", async (email,password) => {
+        console.log("Event Login : " + email + " & Password : " + password);
+ 
+        const cursor = await users.findOne({ email: email }).exec();
+        console.log(cursor);
+        try {
+            if(cursor != null){
+                if(cursor.password === password){
+                    socket.emit('login', true);
+                    console.log("Login: Login Successfully");
+                }else{
+                    socket.emit('login', false);
+                }
+            }else{
+                socket.emit('login', false);
+                console.log('Data Null');
+            }
+        }catch(err){
+            console.log('Data Null');
+        }
+    });
+
+//SignIn
+//SignUp
+    socket.on('register', function(name, email, password) {
+        console.log("Name : "+name+" - Email : "+email+" - Password : "+password+ " : Register");
+        var user = ({ name: name, email: email, password: password });
+        users.create(user, function(err, result) {
+            if (err) {
+                console.log(err);
+                socket.emit('register', false);
+            } else {
+                console.log('RegisterUser : New User Successfully');
+                socket.emit('register', true);
+            }
+        });
+    });
+//SignUp
+
+//Insert Students
+  socket.on('insertStudents', function(nameStudent,codeStudent,careerStudent,dateOfBirthStudent) {
+      console.log("NameStudent : "+nameStudent+" - Code Student : "+codeStudent+" - Career : "+careerStudent+" - Date Of Birth Student : "+dateOfBirthStudent);
+      var student = ({nameStudent:nameStudent, codeStudent:codeStudent, careerStudent:careerStudent, dateOfBirthStudent:dateOfBirthStudent});
+      students.create(student, function(err, result) {
+          if(err){
+              console.log("Error InsertStudent: "+err);
+              socket.emit('insertStudents', false);
+          }else{
+              console.log('insertStudents : Insert Student Successfully');
+              socket.emit('insertStudents', true);
+          }
+      });
+  });
+//Insert Students
+
+//Insert Students
+  socket.on('insertBook', function(idBook,nameBook,kindOfBook,mentor,fromBook){
+      var book = ({idBook:idBook, nameBook:nameBook, kindOfBook:kindOfBook, mentor:mentor,fromBook:fromBook});
+      books.create(book, function(err, result) {
+          if(err){
+              socket.emit('insertBook', false);
+          }else{
+              socket.emit('insertBook', true);
+          }
+      });
+  });
+//Insert Students
+
+//Delete Students
+  socket.on('deleteStudents', function(_id) {
+      console.log("_ID : "+_id);
+      students.findByIdAndRemove(_id,(error, deleteRecord) =>{
+        if(error){
+          console.log("Error DeleteStudent: "+error);
+          socket.emit('deleteStudents',false);
+        }else{
+          console.log('DeleteStudent : Delete Student Successfully');
+          socket.emit('insertStudents', true);
+        }
+      })
+  })
+//Delete Students
+
+//Update Students
+  socket.on('updateStudents', function(_id,nameStudent,codeStudent,careerStudent, dateOfBirthStudent) {
+      console.log("- Name Student : "+nameStudent+" - Code Student : "+codeStudent+" - Career Student : "+careerStudent+"Date Of Birth Student : "+dateOfBirthStudent);
+      students.findByIdAndUpdate(_id,{nameStudent:nameStudent,codeStudent:codeStudent,careerStudent:careerStudent,dateOfBirthStudent:dateOfBirthStudent},(error,updateRecord) => {
+        if(error){
+          console.log("Error Update Student : "+error);
+          socket.emit('updateStudents',false);
+        }else{
+          console.log('updateStudent : Update Student Successfully');
+          socket.emit('updateStudents',true);
+        }
+      });
+  });
+//Update Students
+
+//Get Students
+  socket.on('getAllStudents', function(message){
+    console.log("Sever : GetStudents : "+message);
+    students.find({}).then(docs =>{
+      if(docs != null){
+        io.sockets.emit('getAllStudents',docs);
+        console.log("Docs : "+docs);
+      }else{
+        console.log("----------------");
+        console.log("Full Data Done Get Students :"+docs);
+      }
+    });
+  });
+//Get Students
+
+  
+
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    return val;
+  }
+
+  if (port >= 0) {
+    return port;
+  }
+
+  return false;
+}
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+

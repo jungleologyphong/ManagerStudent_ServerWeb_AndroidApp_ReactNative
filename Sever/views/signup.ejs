@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sign Up</title>
+
+    <!-- Font Icon -->
+    <link rel="stylesheet" href="/fonts/material-icon/css/material-design-iconic-font.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.8/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Main css -->
+    <link rel="stylesheet" href="stylesheets/style.css">
+</head>
+<body>
+
+    <div class="main" ng-app="myapp">
+        <!-- Sign up form -->
+        <section class="signup" ng-controller="myctrl">
+            <div class="container">
+                <div class="signup-content">
+                    <div class="signup-form">
+                        <h2 class="form-title">Sign Up</h2>
+                        <form method="POST" class="register-form" id="register-form">
+                            <div class="form-group">
+                                <label for="name"><i class="zmdi zmdi-account material-icons-name"></i></label>
+                                <input type="text" ng-model="user.name" name="name" id="name" placeholder="Your Name"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="email"><i class="zmdi zmdi-email"></i></label>
+                                <input type="email" ng-model="user.email" name="email" id="email" placeholder="Your Email"/>
+                            </div>
+                            <div class="form-group">
+                                <label for="pass"><i class="zmdi zmdi-lock"></i></label>
+                                <input type="password" ng-model="user.password" name="pass" id="pass" placeholder="Password"/>
+                            </div>
+                            <div class="form-group form-button">
+                                <button ng-click="register()">Register</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="signup-image">
+                        <figure><img src="images/signup-image.jpg" alt="sing up image"></figure>
+                        <a href="/index" class="signup-image-link">I am already member</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        var app = angular.module("myapp", []);    
+        app.controller("myctrl", function($scope) {
+            $scope.user = {
+                name: "",
+                email: "",
+                password: "",
+            }
+
+            $scope.register = function() {
+            var socket = io.connect('http://localhost:3000');
+            socket.on('connect', function(data) {
+                socket.emit('register', $scope.user.name,$scope.user.email,$scope.user.password);
+    
+                socket.on('register', function(data) {
+                    if (data == true) {
+                        alert("Register Succesfully");
+                        window.location="http://localhost:3000/index";
+                    } else {
+                        alert("Register Failed");
+                    }
+                }); 
+            });
+        }
+        })  
+    </script>
+</body>
+</html>
